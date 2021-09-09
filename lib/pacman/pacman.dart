@@ -12,8 +12,6 @@ class Pacman extends StatefulWidget {
 class _PacmanState extends State<Pacman> with TickerProviderStateMixin {
   late AnimationController _animationController;
 
-  late AnimationController _circleAnimation;
-
   @override
   void initState() {
     super.initState();
@@ -22,14 +20,7 @@ class _PacmanState extends State<Pacman> with TickerProviderStateMixin {
       duration: Duration(seconds: 1),
     );
 
-    _circleAnimation = AnimationController(
-      vsync: this,
-      duration: Duration(seconds: 1),
-    );
-
     _animationController.repeat(reverse: true);
-    // _circleAnimation.repeat();
-    _circleAnimation = _animationController;
   }
 
   @override
@@ -37,9 +28,6 @@ class _PacmanState extends State<Pacman> with TickerProviderStateMixin {
     return CustomPaint(
       size: Size(200, 200),
       painter: PacmanPaint(
-        pacmanAnimation: _animationController,
-        circleAnimation: _circleAnimation,
-        repaints: Listenable.merge([_animationController, _circleAnimation]),
         repaint: _animationController,
       ),
     );
@@ -48,7 +36,6 @@ class _PacmanState extends State<Pacman> with TickerProviderStateMixin {
   @override
   void dispose() {
     _animationController.dispose();
-    _circleAnimation.dispose();
     super.dispose();
   }
 }
@@ -58,26 +45,15 @@ class PacmanPaint extends CustomPainter {
     this.angle = 50,
     required this.repaint,
     this.count = 5,
-    required this.pacmanAnimation,
-    required this.circleAnimation,
-    required this.repaints,
-  }) : super(repaint: repaints);
+  }) : super(repaint: repaint);
 
   final double angle;
 
   final Animation<double> repaint;
 
-  final Animation<double> pacmanAnimation;
-
-  final Animation<double> circleAnimation;
-
-  final Listenable repaints;
-
   final int count;
 
   final _paint = Paint();
-
-  double circleValue = 0;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -89,28 +65,21 @@ class PacmanPaint extends CustomPainter {
 
     canvas.clipRect(Offset.zero & size);
 
-    // print('print 17:46: ${circleAnimation.value.toStringAsFixed(2)}');
-
-    // print('print 17:41: ${pacmanAnimation.value.toStringAsFixed(2)}');
-
-    // if (circleValue <= 0) {
-    //   circleValue = pacmanAnimation.value;
-    // } else if (circleValue >= 0.99) {
-    //   circleValue = 1 - pacmanAnimation.value;
-    // }
-    //
-    // print('print 09:23: ${circleValue}');
-
     canvas.save();
 
     var _perX = size.width / (count - 1);
 
     for (int i = 0; i < count * 2; i++) {
-      var _x = _perX * i - size.width * circleAnimation.value;
+      var _x = _perX * i -
+          size.width *
+              (repaint.status == AnimationStatus.forward
+                  ? repaint.value
+                  : 1 - repaint.value);
+
       if (_x >= 0 && _x <= size.width) {
         canvas.drawCircle(
           Offset(_x, size.height / 2),
-          3,
+          10,
           Paint()..color = Colors.blue,
         );
       }
@@ -135,7 +104,7 @@ class PacmanPaint extends CustomPainter {
       width: size.width,
       height: size.height,
     );
-    var a = pacmanAnimation.value * angle / 180 * pi;
+    var a = repaint.value * angle / 180 * pi;
 
     canvas.drawArc(
       rect,
@@ -157,5 +126,5 @@ class PacmanPaint extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant PacmanPaint oldDelegate) =>
-      oldDelegate.repaints != repaints;
+      oldDelegate.repaint != repaint;
 }
